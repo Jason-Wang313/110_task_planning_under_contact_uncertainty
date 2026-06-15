@@ -1,7 +1,7 @@
 # Novelty Decision
 
-Chosen thesis: Task Planning Under Contact Uncertainty turns the seed bet into a mechanism: Plan over uncertainty in future contact modes rather than over abstract symbolic preconditions.
+Decision: STRONG_REVISE
 
-New central mechanism: Task planning under contact uncertainty keeps action-critical alternatives explicit until a physical observation collapses them.
+The paper has a defensible narrow novelty claim after v4: contact-belief task planning improves local planning outcomes under contact uncertainty beyond contingent POMDP-TAMP and risk-aware baselines.
 
-Decision: proceed as a revise/workshop-strength ICLR-style draft with synthetic but runnable evidence.
+The paper is not ready for ICLR main because novelty and evidence remain local. External validation is mandatory before submission.

@@ -1,0 +1,9 @@
+baseline,mean_success_diff,ci95_success_diff,wins,total,decision,strongest_non_oracle
+conformal_risk_tamp,0.1253,0.0091,7,7,proposed_better,False
+contingent_pomdp_tamp,0.0801,0.0083,7,7,proposed_better,True
+deterministic_symbolic_tamp,0.2475,0.0065,7,7,proposed_better,False
+ensemble_belief_planner,0.1028,0.0069,7,7,proposed_better,False
+learned_failure_classifier,0.131,0.0111,7,7,proposed_better,False
+oracle_contact_outcome_planner,-0.0957,0.0029,0,7,not_decisive,False
+receding_horizon_mpc,0.1464,0.0084,7,7,proposed_better,False
+robust_geometric_tamp,0.1782,0.0133,7,7,proposed_better,False

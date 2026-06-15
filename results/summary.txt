@@ -1,16 +1,51 @@
-Submission-hardening experiment for paper 110 task_planning_under_contact_uncertainty
-Seven seeds, 600 episodes per seed, strong baselines, ablations, stress sweep, and negative cases.
-observed_only_behavior_clone hidden_mode_shift mean_success=0.4105 ci95=0.0154 tail=0.5895
-observed_only_behavior_clone combined_stress mean_success=0.3276 ci95=0.0173 tail=0.6724
-data_augmentation_wam hidden_mode_shift mean_success=0.5012 ci95=0.0217 tail=0.4988
-data_augmentation_wam combined_stress mean_success=0.4288 ci95=0.0166 tail=0.5712
-scalar_uncertainty_planner hidden_mode_shift mean_success=0.5712 ci95=0.0145 tail=0.4288
-scalar_uncertainty_planner combined_stress mean_success=0.5086 ci95=0.0153 tail=0.4914
-ensemble_disagreement_planner hidden_mode_shift mean_success=0.5876 ci95=0.0162 tail=0.4124
-ensemble_disagreement_planner combined_stress mean_success=0.5393 ci95=0.0219 tail=0.4607
-conformal_risk_filter hidden_mode_shift mean_success=0.6150 ci95=0.0249 tail=0.3850
-conformal_risk_filter combined_stress mean_success=0.5633 ci95=0.0110 tail=0.4367
-proposed_branch_mechanism hidden_mode_shift mean_success=0.7000 ci95=0.0126 tail=0.3000
-proposed_branch_mechanism combined_stress mean_success=0.6600 ci95=0.0143 tail=0.3400
-oracle_branch_upper_bound hidden_mode_shift mean_success=0.7712 ci95=0.0141 tail=0.2288
-oracle_branch_upper_bound combined_stress mean_success=0.7455 ci95=0.0081 tail=0.2545
+Paper 110 task_planning_under_contact_uncertainty evidence rebuild
+Design: 5 tasks x 7 contact-uncertainty regimes x 5 splits x 9 methods, 7 seeds, 84 episodes/group.
+Terminal decision: STRONG_REVISE
+Rationale: local contact-belief task-planning evidence supports the mechanism only if all gates pass; real robot/external validation remains missing.
+
+Combined-stress ranking:
+oracle_contact_outcome_planner: success=0.656 +/- 0.003, precondition_violation=0.020, belief_ece=0.049, recovery_success=0.612, damage_rate=0.037, wasted_action=0.061, cost=0.200, regret=0.000
+proposed_contact_belief_tamp: success=0.560 +/- 0.004, precondition_violation=0.057, belief_ece=0.068, recovery_success=0.559, damage_rate=0.047, wasted_action=0.073, cost=0.213, regret=0.096
+contingent_pomdp_tamp: success=0.480 +/- 0.006, precondition_violation=0.108, belief_ece=0.108, recovery_success=0.461, damage_rate=0.060, wasted_action=0.103, cost=0.311, regret=0.176
+ensemble_belief_planner: success=0.457 +/- 0.006, precondition_violation=0.131, belief_ece=0.125, recovery_success=0.398, damage_rate=0.069, wasted_action=0.115, cost=0.287, regret=0.198
+conformal_risk_tamp: success=0.435 +/- 0.008, precondition_violation=0.143, belief_ece=0.132, recovery_success=0.362, damage_rate=0.062, wasted_action=0.127, cost=0.322, regret=0.221
+learned_failure_classifier: success=0.429 +/- 0.008, precondition_violation=0.156, belief_ece=0.148, recovery_success=0.360, damage_rate=0.076, wasted_action=0.129, cost=0.243, regret=0.227
+receding_horizon_mpc: success=0.414 +/- 0.007, precondition_violation=0.173, belief_ece=0.165, recovery_success=0.325, damage_rate=0.080, wasted_action=0.141, cost=0.260, regret=0.242
+robust_geometric_tamp: success=0.382 +/- 0.010, precondition_violation=0.199, belief_ece=0.182, recovery_success=0.256, damage_rate=0.083, wasted_action=0.157, cost=0.270, regret=0.274
+deterministic_symbolic_tamp: success=0.312 +/- 0.007, precondition_violation=0.235, belief_ece=0.210, recovery_success=0.194, damage_rate=0.104, wasted_action=0.171, cost=0.141, regret=0.343
+
+Gate outcomes:
+success_gate: True
+diagnostic_gate: True
+safety_gate: True
+pairwise_gate: True
+ablation_gate: True
+success_margin_vs_strongest: 0.08012633624878512
+precondition_violation_delta_vs_strongest: -0.05036365832266481
+recovery_success_delta_vs_strongest: 0.09810597085711398
+damage_rate_delta_vs_strongest: -0.012700896215795926
+wasted_action_delta_vs_strongest: -0.029176536473482978
+intervention_cost_delta_vs_strongest: -0.09742479999999998
+ablation_margin_vs_best_removed_component: 0.029543245869776524
+strongest_non_oracle_baseline: contingent_pomdp_tamp
+best_removed_component: minus_damage_model
+oracle_success: 0.656
+
+Pairwise proposed comparisons:
+conformal_risk_tamp: diff=0.125 +/- 0.009, wins=7/7, decision=proposed_better
+contingent_pomdp_tamp: diff=0.080 +/- 0.008, wins=7/7, decision=proposed_better
+deterministic_symbolic_tamp: diff=0.247 +/- 0.006, wins=7/7, decision=proposed_better
+ensemble_belief_planner: diff=0.103 +/- 0.007, wins=7/7, decision=proposed_better
+learned_failure_classifier: diff=0.131 +/- 0.011, wins=7/7, decision=proposed_better
+oracle_contact_outcome_planner: diff=-0.096 +/- 0.003, wins=0/7, decision=not_decisive
+receding_horizon_mpc: diff=0.146 +/- 0.008, wins=7/7, decision=proposed_better
+robust_geometric_tamp: diff=0.178 +/- 0.013, wins=7/7, decision=proposed_better
+
+Ablations:
+full_contact_belief_tamp: success=0.557 +/- 0.007, precondition_violation=0.057, recovery_success=0.559, damage_rate=0.047, note=all components
+minus_damage_model: success=0.527 +/- 0.006, precondition_violation=0.075, recovery_success=0.517, damage_rate=0.069, note=ignores irreversible side effects
+minus_contact_probe_selector: success=0.526 +/- 0.005, precondition_violation=0.075, recovery_success=0.493, damage_rate=0.055, note=does not reduce uncertainty before irreversible steps
+minus_chance_constraint: success=0.510 +/- 0.005, precondition_violation=0.096, recovery_success=0.516, damage_rate=0.067, note=over-commits to risky branches
+minus_recovery_affordance_graph: success=0.506 +/- 0.009, precondition_violation=0.092, recovery_success=0.387, damage_rate=0.056, note=cannot plan repair branches after failed contact
+minus_contact_belief_state: success=0.488 +/- 0.006, precondition_violation=0.121, recovery_success=0.459, damage_rate=0.055, note=collapses uncertain contact outcomes into Boolean preconditions
+pomdp_only: success=0.479 +/- 0.005, precondition_violation=0.107, recovery_success=0.461, damage_rate=0.061, note=contingent POMDP-TAMP baseline
