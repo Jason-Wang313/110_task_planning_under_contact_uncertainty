@@ -3,3 +3,7 @@ unobservable_internal_contact,combined_stress,belief stays calibrated but hidden
 semantic_task_mismatch,unseen_object,correct contact branch executes the wrong symbolic goal,0.446,contact belief does not solve language grounding
 probe_causes_damage,unseen_contact,diagnostic contact probe itself scratches the object,0.418,probe safety must be validated on hardware
 oracle_gap,combined_stress,oracle contact-outcome planner remains better,0.56,branch belief is useful but not saturated
+belief_overconfidence_after_probe,seen_shift,a successful probe makes the planner overconfident about later contacts,0.454,belief updates need temporal decay and uncertainty inflation
+irreversible_regrasp_branch,combined_stress,a failed regrasp consumes the only safe recovery affordance,0.407,branch scoring needs irreversible-resource accounting
+multi_object_contact_coupling,unseen_object,contact with one object changes another object's feasible branch set,0.429,needs coupled object-state beliefs rather than independent branch beliefs
+planner_timeout_under_branching,combined_stress,high contact uncertainty creates too many recoverable branches to search,0.401,requires anytime pruning or learned branch proposal policies

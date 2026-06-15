@@ -6,7 +6,8 @@
 - [x] Contact uncertainty regimes include hidden friction, pose ambiguity, compliance ambiguity, jamming, release, and combined stress.
 - [x] Safety and planning-cost metrics reported alongside success.
 - [x] Ablations target core planning components.
-- [x] Failure cases documented.
+- [x] Stress-sweep task/regime/seed evidence emitted.
+- [x] Eight failure cases documented.
 - [ ] Real robot validation.
 - [ ] Independent high-fidelity simulator validation.
 - [ ] External trained policy/planner checkpoints.
