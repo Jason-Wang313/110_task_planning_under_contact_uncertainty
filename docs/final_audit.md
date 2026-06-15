@@ -1,12 +1,11 @@
 # Final Audit
 
-1. Chosen thesis: Task Planning Under Contact Uncertainty explores `Plan over uncertainty in future contact modes rather than over abstract symbolic preconditions.` for task and motion planning.
-2. ICLR-main decision: KILL_ARCHIVE.
-3. Submission-hardening version: v3.
-4. Reason: synthetic-only, template-generated evidence cannot support ICLR main-conference robotics claims.
-5. Closest hostile prior work: see `docs/hostile_prior_work.md`, `docs/hostile_prior_work_100_cards.csv`, and `docs/hostile_reviewer_response.md`.
-6. Reproducibility: synthetic code runs, but no real robot or high-fidelity benchmark is reproduced.
-7. Claim-validity status: main-conference claims killed; archive memo retained.
-8. Exact Downloads PDF path: `C:/Users/wangz/Downloads/110.pdf`
-9. GitHub URL: https://github.com/Jason-Wang313/110_task_planning_under_contact_uncertainty
-10. Confirmation: no visible Desktop copy was requested or made.
+Paper: 110 task_planning_under_contact_uncertainty
+
+Decision: STRONG_REVISE
+
+The v4 rebuild adds a local contact-belief task-planning benchmark with paired seeds, strong local planning baselines, ablations, stress sweeps, failure cases, LaTeX tables, and figures. The proposed contact-belief TAMP beats the strongest non-oracle baseline, `contingent_pomdp_tamp`, by `0.080 +/- 0.008` paired success under combined stress.
+
+Planning diagnostics pass: precondition violations fall by `0.050`, recovery success improves by `0.098`, and damage, wasted actions, and intervention cost are lower than the strongest non-oracle baseline.
+
+Remaining blocker: the evidence is local. The paper should not be submitted to ICLR main without real robot or independent high-fidelity validation and external trained baselines.

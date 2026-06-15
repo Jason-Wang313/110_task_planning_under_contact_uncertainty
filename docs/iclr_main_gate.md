@@ -2,18 +2,17 @@
 
 Paper: 110 task_planning_under_contact_uncertainty
 
-Existing v2 decision: KILL_ARCHIVE
+Previous v3 decision: KILL_ARCHIVE
 
-Gate verdict: KILL_ARCHIVE
+Gate verdict after v4 rebuild: STRONG_REVISE
 
-Evidence digest: c7bc23292134c3c9
+Evidence digest: local contact-belief task-planning benchmark, 5 tasks, 7 uncertainty regimes, 5 splits, 9 methods, 7 paired seeds, 84 episodes per group.
 
-Fatal blockers:
-- Synthetic-only evidence.
-- Template-generated experiment and writing.
-- No real robot or high-fidelity benchmark.
-- No trained WAM/model checkpoint.
-- No implemented real baselines.
-- No manual exhaustive related-work synthesis.
+Gate outcomes:
+- Success margin over strongest non-oracle baseline: PASS (`0.080`).
+- Diagnostic improvement: PASS (`-0.050` precondition violation and `+0.098` recovery success).
+- Safety/cost non-regression: PASS.
+- Pairwise seeds: PASS (7/7 wins).
+- Ablation margin: PASS (`0.030`).
 
-The only honest main-conference-safe decision is to archive rather than overclaim.
+ICLR main ready: NO. Real robot or independent high-fidelity validation is still required.

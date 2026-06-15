@@ -1,13 +1,13 @@
 # Novelty Boundary Map
 
-## Crowded Territory
-- Bigger data/model scaling.
-- New benchmark only.
-- Generic active learning or uncertainty.
-- Combining a planner with a learned policy without a new state/action object.
+Novel:
+- Contact-outcome belief state for future TAMP branch feasibility.
+- Joint gate over success, precondition violation, belief calibration, recovery, damage, wasted action, cost, paired seeds, and ablations.
+- Local evidence that the proposed planner beats contingent POMDP-TAMP under combined contact uncertainty.
 
-## Claimed Boundary
-Task planning under contact uncertainty keeps action-critical alternatives explicit until a physical observation collapses them.
-
-## What Would Falsify The Claim
-If observed-only baselines match the adverse-mode coverage and closed-loop success of the proposed branch-aware mechanism, the paper should be revised or killed.
+Not novel:
+- TAMP.
+- POMDPs.
+- Robust planning.
+- Contact-rich manipulation.
+- Chance constraints.

@@ -1,0 +1,5 @@
+case,stress_split,observed_failure,success_rate,lesson
+unobservable_internal_contact,combined_stress,belief stays calibrated but hidden internal deformation changes outcome,0.392,needs tactile or deformable-state sensing
+semantic_task_mismatch,unseen_object,correct contact branch executes the wrong symbolic goal,0.446,contact belief does not solve language grounding
+probe_causes_damage,unseen_contact,diagnostic contact probe itself scratches the object,0.418,probe safety must be validated on hardware
+oracle_gap,combined_stress,oracle contact-outcome planner remains better,0.56,branch belief is useful but not saturated

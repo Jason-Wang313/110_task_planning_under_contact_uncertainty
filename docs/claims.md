@@ -1,6 +1,15 @@
 # Claims
 
-- Mechanism claim: Task planning under contact uncertainty keeps action-critical alternatives explicit until a physical observation collapses them.
-- Evidence claim: the included synthetic experiment tests hidden physical-mode perturbations and compares observed-only, augmented-data, uncertainty, and proposed variants.
-- Scope claim: results support mechanism plausibility, not real-robot deployment.
-- Unsupported claim explicitly avoided: no claim of SOTA robot performance.
+## Supported Locally
+
+- Deterministic symbolic preconditions fail under uncertain future contact outcomes.
+- Contact-belief TAMP improves combined-stress success over contingent POMDP-TAMP, conformal risk TAMP, ensemble belief planning, MPC, robust TAMP, and deterministic TAMP.
+- The gain is not purchased with higher damage, wasted actions, or intervention cost versus the strongest non-oracle baseline.
+- Contact belief state, recovery affordance graph, probes, chance constraints, and damage modeling each contribute.
+
+## Not Claimed
+
+- Real robot readiness.
+- A new general TAMP solver.
+- Superiority over all POMDP or robust planning systems.
+- Full foundation-model integration.
