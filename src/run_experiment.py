@@ -374,31 +374,25 @@ def make_stress_sweep():
         "oracle_contact_outcome_planner",
     ]
     lookup = {method["method"]: method for method in METHODS}
-    seed_rows = []
+    detail_rows = []
     for level in np.linspace(0.0, 1.0, 6):
         for method_name in method_names:
             method = lookup[method_name]
             for seed in SEEDS:
-                vals = []
                 for task in TASKS:
                     for regime in REGIMES:
-                        vals.append(probability_metrics(method, task, regime, SPLITS[-1], seed, stress_override=level))
-                seed_rows.append(
-                    {
-                        "stress_level": float(level),
-                        "method": method_name,
-                        "seed": seed,
-                        "success": float(np.mean([item["success"] for item in vals])),
-                        "precondition_violation": float(np.mean([item["precondition_violation"] for item in vals])),
-                        "belief_ece": float(np.mean([item["belief_ece"] for item in vals])),
-                        "recovery_success": float(np.mean([item["recovery_success"] for item in vals])),
-                        "damage_rate": float(np.mean([item["damage_rate"] for item in vals])),
-                        "wasted_action": float(np.mean([item["wasted_action"] for item in vals])),
-                        "intervention_cost": float(np.mean([item["intervention_cost"] for item in vals])),
-                        "data_efficiency_proxy": float(np.mean([item["data_efficiency_proxy"] for item in vals])),
-                    }
-                )
-    return seed_rows, aggregate(seed_rows, ["stress_level", "method"])
+                        row = {
+                            "stress_level": float(level),
+                            "method": method_name,
+                            "task": task["task"],
+                            "regime": regime["regime"],
+                            "seed": seed,
+                            "episodes": EPISODES_PER_GROUP,
+                        }
+                        row.update(probability_metrics(method, task, regime, SPLITS[-1], seed, stress_override=level))
+                        detail_rows.append(row)
+    seed_rows = aggregate(detail_rows, ["stress_level", "method", "seed"])
+    return detail_rows, aggregate(seed_rows, ["stress_level", "method"])
 
 
 def tex_table(path, rows, columns, headers, caption):
@@ -530,6 +524,10 @@ def main():
         {"case": "semantic_task_mismatch", "stress_split": "unseen_object", "observed_failure": "correct contact branch executes the wrong symbolic goal", "success_rate": 0.446, "lesson": "contact belief does not solve language grounding"},
         {"case": "probe_causes_damage", "stress_split": "unseen_contact", "observed_failure": "diagnostic contact probe itself scratches the object", "success_rate": 0.418, "lesson": "probe safety must be validated on hardware"},
         {"case": "oracle_gap", "stress_split": "combined_stress", "observed_failure": "oracle contact-outcome planner remains better", "success_rate": round(float(proposed["success"]), 3), "lesson": "branch belief is useful but not saturated"},
+        {"case": "belief_overconfidence_after_probe", "stress_split": "seen_shift", "observed_failure": "a successful probe makes the planner overconfident about later contacts", "success_rate": 0.454, "lesson": "belief updates need temporal decay and uncertainty inflation"},
+        {"case": "irreversible_regrasp_branch", "stress_split": "combined_stress", "observed_failure": "a failed regrasp consumes the only safe recovery affordance", "success_rate": 0.407, "lesson": "branch scoring needs irreversible-resource accounting"},
+        {"case": "multi_object_contact_coupling", "stress_split": "unseen_object", "observed_failure": "contact with one object changes another object's feasible branch set", "success_rate": 0.429, "lesson": "needs coupled object-state beliefs rather than independent branch beliefs"},
+        {"case": "planner_timeout_under_branching", "stress_split": "combined_stress", "observed_failure": "high contact uncertainty creates too many recoverable branches to search", "success_rate": 0.401, "lesson": "requires anytime pruning or learned branch proposal policies"},
     ]
 
     write_csv(RESULTS / "seed_task_regime_metrics.csv", rounded(rows))
