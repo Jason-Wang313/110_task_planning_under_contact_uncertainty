@@ -1,19 +1,27 @@
 \begin{table}[t]
 \centering
-\caption{Paired seed success differences between proposed and each comparator.}
+\caption{Paired hard-split differences against the v5 branch audit.}
+\scriptsize
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{lrrr}
 \toprule
-Baseline & Diff & CI & Wins \\
+Baseline & SuccDiff & UtilDiff & UtilWins \\
 \midrule
-DetTAMP & 0.247 & 0.006 & 7.000 \\
-RobustTAMP & 0.178 & 0.013 & 7.000 \\
-MPC & 0.146 & 0.008 & 7.000 \\
-FailureCls & 0.131 & 0.011 & 7.000 \\
-ConformalTAMP & 0.125 & 0.009 & 7.000 \\
-EnsembleBelief & 0.103 & 0.007 & 7.000 \\
-POMDP-TAMP & 0.080 & 0.008 & 7.000 \\
-Oracle & -0.096 & 0.003 & 0.000 \\
+Conformal & 0.198 & 0.418 & 10 \\
+ImplicitTAMP & 0.154 & 0.361 & 10 \\
+POMDP-TAMP & 0.126 & 0.292 & 10 \\
+DamageAware & 0.152 & 0.340 & 10 \\
+DetTAMP & 0.301 & 0.630 & 10 \\
+Ensemble & 0.165 & 0.367 & 10 \\
+LearnedBelief & 0.110 & 0.255 & 10 \\
+FailCls & 0.183 & 0.422 & 10 \\
+OracleOutcome & -0.035 & -0.025 & 1 \\
+OracleHybrid & -0.064 & -0.069 & 0 \\
+v4BeliefTAMP & 0.070 & 0.149 & 10 \\
+MPC & 0.188 & 0.455 & 10 \\
+RiskTAMP & 0.135 & 0.309 & 10 \\
+RobustGeom & 0.242 & 0.545 & 10 \\
+SmoothWM & 0.181 & 0.437 & 10 \\
 \bottomrule
 \end{tabular}
 }

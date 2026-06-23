@@ -2,14 +2,20 @@
 
 - [x] Single-command experiment: `python src\run_experiment.py`.
 - [x] Deterministic seed base documented in code.
-- [x] Raw seed/task/regime metrics emitted.
-- [x] Aggregated metrics emitted.
-- [x] Pairwise seed statistics emitted.
-- [x] Ablation metrics emitted.
-- [x] Stress sweep emitted with aggregate and task/regime/seed files.
-- [x] Eight failure cases emitted.
-- [x] LaTeX tables generated from results.
+- [x] Main cell metrics emitted.
+- [x] Task/regime/split/method aggregates emitted.
+- [x] Method/split/seed metrics emitted.
+- [x] Hard-split paired statistics emitted.
+- [x] Ablation cell, seed, and aggregate metrics emitted.
+- [x] Stress-sweep cell, seed, and aggregate metrics emitted.
+- [x] Fixed-risk cell, seed, aggregate, and paired metrics emitted.
+- [x] Failure-case CSV emitted.
+- [x] Summary JSON emitted.
+- [x] LaTeX support tables generated from results.
 - [x] Figures generated from results.
+- [x] Manuscript generated from `summary.json`.
+- [x] PDF compiled and copied to Downloads as `110.pdf`.
+- [x] Validator passed.
 - [ ] External robot logs.
 - [ ] Hardware videos.
-- [ ] External benchmark config files.
+- [ ] External benchmark configuration files.

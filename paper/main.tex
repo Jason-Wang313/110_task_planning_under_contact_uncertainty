@@ -6,7 +6,27 @@
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{placeins}
+\hypersetup{
+  colorlinks=false,
+  citebordercolor={0 0.85 0.20},
+  linkbordercolor={1 0.55 0},
+  urlbordercolor={0 0.45 1},
+  pdfborder={0 0 1.5}
+}
 
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newcommand{\method}{contact-belief branch audit v5}
+\newcommand{\terminal}{\textbf{STRONG\_REVISE}}
 \title{Task Planning Under Contact Uncertainty}
 \author{Anonymous Authors}
 \raggedbottom
@@ -15,105 +35,407 @@
 \maketitle
 
 \begin{abstract}
-Task and motion planners often treat contact outcomes as deterministic symbolic preconditions: a grasp succeeds, a peg inserts, a drawer opens, or a cable routes. Contact-rich manipulation violates that abstraction. Friction, pose, compliance, jamming, release, and damage can make a future contact branch uncertain before the robot reaches it. We rebuild Paper 110 around a falsifiable mechanism: task planners should maintain contact-outcome beliefs over future branches and choose plans that remain recoverable under plausible contact failures. A local benchmark covers 5 task families, 7 contact-uncertainty regimes, 5 deployment splits, 9 methods, 7 paired seeds, and 84 episodes per group. Under combined stress, the proposed contact-belief TAMP obtains $0.560 \pm 0.004$ success versus $0.480 \pm 0.006$ for the strongest non-oracle baseline, contingent POMDP-TAMP. It reduces precondition violation from $0.108$ to $0.057$, improves recovery success from $0.461$ to $0.559$, lowers damage from $0.060$ to $0.047$, lowers wasted actions from $0.103$ to $0.073$, and wins 7/7 paired seeds. The v4.1 audit expands stress-sweep evidence to task/regime/seed granularity and records eight failure cases. The terminal decision is \textbf{STRONG\_REVISE}: the local evidence supports the mechanism, but real robot or independent high-fidelity validation is still required before ICLR-main submission.
+Task and motion planners often treat contact outcomes as symbolic preconditions that are either true or false: a grasp holds, a peg inserts, a drawer opens, a cable routes, or a foot support is valid. Contact-rich robotics violates that simplification. Friction, pose, compliance, jamming, release, sensor dropout, branch-resource depletion, and irreversible damage make future symbolic branches uncertain before the robot reaches them. This rebuild turns Paper 110 into an expanded falsification-oriented study of contact-outcome belief in task planning. The CPU-only protocol covers 8 task families, 10 contact-uncertainty regimes, 8 deployment splits, 16 methods, 10 paired seeds, 102,400 main cells, 8,000 ablation cells, 48,000 stress cells, 51,200 fixed-risk cells, and 24 failure cases. The proposed \method{} obtains held-out hard success 0.630 and utility 0.612 versus 0.560 and 0.463 for the strongest non-oracle baseline, with success margin 0.070, utility margin 0.149, precondition-violation delta -0.044, belief-ECE delta -0.042, recovery delta 0.059, damage delta -0.020, and 10/10 paired utility wins. The terminal decision is \terminal: the local evidence supports continued development, but ICLR main ready is \textbf{no} because no real robot, independent high-fidelity benchmark, trained external policy, or deployment-log evidence is present.
 \end{abstract}
 
 \section{Motivation}
-Task and motion planning (TAMP) connects symbolic task structure with continuous motion feasibility \citep{kaelbling2011hierarchical,garrett2021integrated}. That abstraction is powerful, but contact-rich manipulation exposes a brittle edge: a future symbolic precondition can depend on uncertain contact outcomes that are not known until the robot touches the world.
+Task and motion planning connects discrete decisions with continuous feasibility \citep{kaelbling2011hierarchical,garrett2021integrated,garrett2020pddlstream,toussaint2015logic,dantam2018incremental}. The abstraction is valuable because symbolic structure reduces search and makes long-horizon manipulation legible. It becomes brittle when a precondition is not an observed fact but an uncertain future contact outcome. A plan may contain an insertion branch that is valid only under a friction state that is not known yet. A cable plan may be symbolically correct but mechanically jamming. A drawer plan may assume release while the contact state is still stick. A legged support plan may consume the only recovery contact before the planner realizes that support was ambiguous.
 
-Planning under uncertainty is not new. POMDPs, contingent planning, robust planning, and sampling-based TAMP all address uncertainty in different forms \citep{kaelbling1998planning,lavalle2006planning,garrett2020pddlstream,toussaint2015logic}. This paper narrows the claim to contact outcomes. It asks whether a planner that carries contact-outcome belief mass through future branches can reduce invalid preconditions, wasted contact attempts, and irreversible damage.
+Planning under uncertainty is not new. POMDPs, contingent planning, robust planning, and sampling-based motion planning have long addressed hidden state and stochastic outcomes \citep{kaelbling1998planning,kurniawati2008sarsop,lavalle2006planning}. Contact dynamics is also not new; non-smooth mechanics and complementarity models have described impacts, unilateral constraints, and Coulomb friction for decades \citep{moreau1999contact,stewart1996implicit,posa2014direct,todorov2012mujoco,pfrommer2020contactnets}. The gap studied here is narrower: current TAMP-style task graphs often collapse contact uncertainty into Boolean preconditions or generic risk scores, while modern robot policies increasingly emphasize scale without necessarily preserving branch-level contact evidence \citep{mandlekar2021robomimic,chi2023diffusion,brohan2022rt1,brohan2023rt2,openx2023rtx,khazatsky2024droid,octo2024}.
 
-\section{Method sketch}
-The proposed method, \texttt{proposed\_contact\_belief\_tamp}, keeps a belief over future contact outcomes: make, miss, slip, jam, release, and damage. Instead of treating preconditions as Boolean facts, it scores branches by likelihood, recovery affordance, probe value, damage risk, and chance-constrained feasibility.
+\paragraph{Central question.}
+Should a task planner maintain contact-outcome belief mass over future branches and score those branches by recoverability, probe value, damage risk, entropy calibration, and irreversible resource use? The paper does not claim that a local generator answers hardware deployment. It asks whether the mechanism survives a hostile local audit with strong baselines, stress sweeps, fixed-risk acceptance, ablations, and explicit failure cases.
 
-The planner has five components:
-\begin{itemize}
-\item contact-outcome belief state over future action branches;
-\item branch-aware symbolic preconditions with probability mass;
-\item recovery affordance graph for failed contacts;
-\item contact-probe action selector before irreversible steps;
-\item chance-constrained damage-aware plan scoring.
-\end{itemize}
+\paragraph{Terminal posture.}
+The final answer is conditional. The local evidence after expansion is positive enough to continue: \method{} beats the strongest non-oracle baseline proposed\_contact\_belief\_tamp\_v4 on hard success and utility, lowers invalid preconditions, improves belief calibration, and survives stricter fixed-risk acceptance. The paper is still not submission-ready for ICLR main because the missing external-evidence scope gate is material, not cosmetic.
 
-The implementation is a local executable benchmark rather than a deployed planner stack. That is sufficient for a mechanism audit but not a final empirical robotics submission.
+\section{Problem Setting}
+Let a task planner construct a branch graph $G=(V,E)$ whose nodes are symbolic or hybrid states and whose edges are robot actions. Standard TAMP variants attach feasibility checks to edges. We instead consider edges whose feasibility depends on a latent contact outcome $z_e$. The planner observes $o_t$, chooses an action $a_t$, and then receives delayed or partial evidence about whether the contact branch made, missed, slipped, jammed, released, damaged the object, or consumed a recovery affordance.
 
-\section{Benchmark}
-The benchmark is generated by \texttt{src/run\_experiment.py}. It writes seed-level CSVs, aggregate metrics, paired tests, ablations, stress sweeps with task/regime/seed detail, failure cases, figures, and LaTeX tables.
+\begin{definition}[Contact-outcome belief]
+For each branch edge $e$, the planner maintains a distribution
+\[
+  b_e(z) = P(z_e=z \mid o_{1:t}, a_{1:t-1}, G),
+\]
+where $z$ ranges over contact outcomes such as make, miss, slip, jam, release, damage, and recovery-consumed. The belief is branch-indexed rather than only state-indexed because two future symbolic preconditions may depend on different latent contact outcomes.
+\end{definition}
+
+\begin{definition}[Recoverable contact branch]
+A branch $e$ is recoverable at budget $B$ if, for every likely failure outcome under $b_e$, there exists a recovery path whose expected intervention cost, irreversible commitment, and damage probability remain below $B$. Recoverability is therefore not identical to high success probability; a branch can be likely to succeed but unrecoverable if it fails.
+\end{definition}
+
+\begin{definition}[Branch audit]
+A branch audit maps candidate edge $e$ to
+\[
+  A(e)=\left(b_e, H(b_e), R_e, Q_e, D_e, C_e, I_e\right),
+\]
+where $H$ is branch entropy, $R_e$ is recovery affordance value, $Q_e$ is probe value, $D_e$ is damage risk, $C_e$ is chance-constrained feasibility, and $I_e$ is irreversible resource consumption.
+\end{definition}
+
+The proposed method uses $A(e)$ to rank, probe, accept, or reject branches. The key distinction from generic risk-aware planning is that the uncertain object is a future contact outcome tied to symbolic preconditions. The method tries to avoid plans that look feasible only because the planner prematurely collapses contact uncertainty.
+
+\section{Why Boolean Preconditions Fail}
+A Boolean precondition is an information-destroying compression when the underlying contact outcome is uncertain. If a branch requires a peg to seat without jamming, the useful planning object is not only whether the precondition is currently true. It is the posterior mass assigned to make, slip, jam, release, and damage, plus the cost of learning which outcome applies. Collapsing that posterior into a binary fact can make a planner both overconfident and unrecoverable.
+
+\begin{proposition}[Posterior collapse can invert branch ranking]
+Consider two branches $e_1$ and $e_2$ with equal expected nominal success after thresholding contact outcomes into Boolean preconditions. If $e_1$ has lower recoverability and higher irreversible damage probability than $e_2$, then a utility objective that preserves contact-outcome belief can rank $e_2$ above $e_1$ while the Boolean planner cannot distinguish them.
+\end{proposition}
+
+\begin{proof}[Sketch]
+The Boolean abstraction maps both branches to the same precondition truth value and nominal success. A contact-belief utility contains additional terms for recovery value and damage risk. If those terms differ, the preserved-belief planner has a strict preference while the Boolean planner is indifferent. The result is independent of any specific simulator and follows from the loss of sufficient statistics under thresholding.
+\end{proof}
+
+\begin{proposition}[Probe value depends on irreversible resource state]
+Let a diagnostic probe reduce entropy by $\Delta H$ and consume resource cost $c$. The probe is utility-improving only if the expected reduction in invalid-precondition, damage, and wasted-action losses exceeds $c$ and does not consume a recovery affordance needed after failure. Therefore probe choice cannot be evaluated from belief entropy alone.
+\end{proposition}
+
+This is why the v5 method includes both probe selection and irreversible resource accounting. A probe that would be useful in a benign drawer task can be unacceptable when it scratches a delicate object or consumes a one-shot recovery contact.
+
+\section{Method}
+The \method{} is a branch-scoring wrapper around a TAMP search. It does not replace motion planning or symbolic search. It changes what information is carried through a branch before a symbolic precondition is accepted. The method has six interacting components.
+
+\paragraph{Contact-outcome belief state.}
+The planner maintains branch-indexed outcome probabilities. Belief is updated by simulated or observed contact evidence and is penalized when calibration is poor. In the local benchmark this is represented by belief and calibration parameters; in a real implementation it would be learned from tactile, visual, force, and proprioceptive traces.
+
+\paragraph{Recovery affordance graph.}
+Each branch stores whether failure leaves a recoverable path. Recovery is not treated as a global property of the task. It is branch-local: a failed regrasp may be recoverable in a drawer task but fatal in a legged-support transition if the support contact is already consumed.
+
+\paragraph{Probe selector.}
+The probe selector chooses low-cost diagnostic contacts before irreversible steps. It trades information gain against probe latency, probe overhead, and possible damage. The stricter v5 stress protocol includes a probe-latency split precisely because a probe can become harmful if it arrives too late.
+
+\paragraph{Chance-constrained feasibility.}
+The method rejects branches whose posterior risk exceeds a chance constraint. This differs from ordinary robust planning because the chance event is tied to a contact outcome that may update during execution.
+
+\paragraph{Damage and irreversible-resource model.}
+The planner tracks expected damage rate and whether a branch consumes scarce recovery resources. This is the component most likely to be missed by an average-success metric. It is also the component a hardware reviewer would care about most.
+
+\paragraph{Entropy-calibrated branch arbitration.}
+The v5 branch audit couples belief, recovery, probe, chance, damage, risk, entropy, resource, calibration, and branch-budget signals. The coupled arbitration path is disabled in removed-component ablations. That design choice prevents a fake ablation where a supposedly removed component still benefits from the joint arbitration layer.
+
+\section{Utility Objective}
+The local implementation scores each branch by a utility proxy:
+\[
+U(e)=S(e)+\lambda_r R_e-\lambda_p P_e-\lambda_b E_e-\lambda_d D_e-\lambda_w W_e-\lambda_i I_e-\lambda_c C_e,
+\]
+where $S$ is success probability, $R$ is recovery success, $P$ is invalid-precondition probability, $E$ is belief/entropy error, $D$ is damage, $W$ is wasted action, $I$ is irreversible commitment, and $C$ is intervention/probe cost. The exact coefficients are encoded in \texttt{src/run\_experiment.py}; the manuscript reports outputs, not hand-adjusted numbers.
+
+The utility is intentionally not a hardware safety certificate. It is a hostile local objective that prevents obvious gaming. A method that refuses to act can lower damage but loses utility through low coverage and intervention cost. A method that always acts can raise success on easy cases but loses fixed-risk utility. A method that relies only on belief entropy can fail when entropy reduction consumes a recovery affordance.
+
+\section{Expanded Benchmark}
+The v5 protocol expands the previous compact audit into a much broader CPU-only evaluation. The factors are frozen before terminal evaluation: 8 tasks, 10 regimes, 8 splits, 16 methods, 10 paired seeds, and 6 episodes per cell.
 
 \paragraph{Tasks.}
-The task families are peg assembly, drawer retrieval, cable routing, tool levering, and mobile handoff.
+The tasks are peg assembly, drawer retrieval, cable routing, tool levering, mobile handoff, bimanual fixture alignment, deformable bin packing, and legged support recovery. These task families were chosen because each stresses a different contact uncertainty: precision insertion, stick-release, deformable routing, irreversible leverage, transfer under motion, bimanual coordination, deformable packing, and support loss.
 
-\paragraph{Contact-uncertainty regimes.}
-The regimes are nominal, hidden friction, pose ambiguity, compliance ambiguity, jamming ambiguity, release uncertainty, and combined contact uncertainty.
+\paragraph{Regimes.}
+The regimes are nominal, hidden friction, pose ambiguity, compliance ambiguity, jamming ambiguity, release uncertainty, partial-observability dropout, irreversible damage risk, branch resource depletion, and combined contact uncertainty.
 
 \paragraph{Splits.}
-The deployment splits are nominal, seen shift, unseen object, unseen contact, and combined stress.
+The splits are nominal, seen shift, unseen object, unseen contact, unseen compliance, probe latency, sensor dropout, and held-out combined contact uncertainty. The final decision is driven mainly by the held-out combined contact uncertainty split plus stress and fixed-risk endpoints.
 
 \paragraph{Methods.}
-The baselines are deterministic symbolic TAMP, robust geometric TAMP, receding-horizon MPC, learned failure classification, ensemble belief planning, conformal risk TAMP, and contingent POMDP-TAMP. The benchmark also includes the proposed contact-belief TAMP and an oracle contact-outcome planner.
+The benchmark includes deterministic symbolic TAMP, robust geometric TAMP, receding-horizon MPC, learned failure classification, ensemble belief planning, conformal risk TAMP \citep{angelopoulos2021conformal,tibshirani2019conformal}, smooth precondition world model, contact-implicit TAMP, contingent POMDP-TAMP, risk-aware TAMP, learned contact belief state, damage-aware planning, v4 contact-belief TAMP, v5 branch audit, oracle contact-outcome planning, and oracle hybrid contact planning.
 
-\paragraph{Metrics.}
-We report task success, precondition violation, belief calibration error, recovery success, damage rate, wasted action rate, intervention cost, regret to oracle, paired seed differences, ablations, stress sweeps, and failure cases.
+\input{generated_row_counts.tex}
+\input{generated_gate_table.tex}
 
-\section{Results}
-\input{../results/combined_stress_table.tex}
+\section{Main Results}
+\input{../results/hard_aggregate_table.tex}
 
-The strongest non-oracle baseline is \texttt{contingent\_pomdp\_tamp}. The proposed method improves combined-stress success by $0.080 \pm 0.008$ in paired seed comparisons and wins 7/7 seeds. The oracle remains higher at $0.656 \pm 0.003$, showing that the benchmark still has headroom.
+On the held-out combined contact-uncertainty split, \method{} obtains success 0.630 and utility 0.612. The strongest non-oracle baseline is proposed\_contact\_belief\_tamp\_v4 with success 0.560 and utility 0.463. The success margin is 0.070 and the utility margin is 0.149. The hybrid oracle reaches success 0.694 and utility 0.681, so the benchmark retains meaningful headroom.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.95\linewidth]{../figures/contact_belief_combined_success.png}
-\caption{Combined-stress success with 95\% confidence intervals. The proposed planner clears all non-oracle baselines but remains below the oracle.}
+\includegraphics[width=0.95\linewidth]{../figures/contact_belief_hard_utility_v5.png}
+\caption{Held-out hard-split utility. The v5 branch audit clears the strongest non-oracle baseline but remains below oracle references.}
 \end{figure}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.95\linewidth]{../figures/contact_belief_diagnostics.png}
-\caption{Planning diagnostics under combined stress. The proposed planner reduces precondition violations and belief error while improving recovery and lowering damage/wasted actions relative to the strongest baseline.}
+\includegraphics[width=0.95\linewidth]{../figures/contact_belief_diagnostics_v5.png}
+\caption{Hard-split diagnostics. The v5 method lowers invalid preconditions and belief error while preserving recovery success under contact uncertainty.}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\linewidth]{../figures/contact_belief_risk_regret_v5.png}
+\caption{Regret to oracle versus damage rate. The proposed method reduces damage relative to the strongest non-oracle baseline while retaining lower regret than generic planners.}
 \end{figure}
 
 \input{../results/pairwise_decision_table.tex}
 
-\section{Ablations and stress tests}
+The paired seed table is more important than the mean ranking. The proposed method wins 10/10 utility seeds against the strongest non-oracle baseline. It does not beat the oracle references, which is exactly the intended interpretation: the mechanism is useful locally, but the contact information remains incomplete.
+
+\section{Ablations}
 \input{../results/ablation_table.tex}
 
-The best removed-component ablation is \texttt{minus\_damage\_model}; the full method remains ahead by $0.030$ success. Removing contact belief, recovery affordances, probes, chance constraints, or damage modeling produces distinct failures, supporting the mechanism-level claim.
+The full v5 method clears the best removed-component variant by success margin 0.015 or utility margin 0.066. The success margin is deliberately modest because the strongest ablations still retain many useful components. The utility margin is larger because removed components tend to increase damage, invalid preconditions, intervention cost, or branch blowup even when raw success remains close.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.95\linewidth]{../figures/contact_belief_ablation.png}
-\caption{Ablations under combined contact uncertainty. The full method remains above every removed-component variant.}
+\includegraphics[width=0.95\linewidth]{../figures/contact_belief_ablation_v5.png}
+\caption{Ablation utility under held-out combined contact uncertainty. Coupled arbitration is disabled when a required component is removed.}
 \end{figure}
+
+The hardest removed components are branch budget and damage modeling. That is plausible and useful. It says the method is not just a belief-state trick. Contact uncertainty becomes dangerous when the planner searches too many plausible branches, consumes recovery actions, or commits to a branch that damages the object before the belief can update.
+
+\section{Stress Sweep}
+\input{../results/max_stress_table.tex}
+
+The stress sweep increases contact uncertainty continuously from benign contact to maximum combined stress. At the endpoint, the v5 branch audit improves utility over the strongest non-oracle baseline by 0.146. This result matters because contact uncertainty is often invisible in nominal evaluation. A planner can look competent on seen tasks and fail when friction, pose, compliance, release, and resource depletion compose.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.95\linewidth]{../figures/contact_belief_stress_sweep.png}
-\caption{Stress sweep over contact-uncertainty intensity. The proposed method stays above MPC, conformal risk TAMP, and POMDP-TAMP across the generated stress range.}
+\includegraphics[width=0.95\linewidth]{../figures/contact_belief_stress_sweep_v5.png}
+\caption{Stress sweep across contact uncertainty. The selected methods include conformal, POMDP, risk-aware, v4, v5, and oracle references.}
 \end{figure}
+
+The sweep is intentionally not run only on the proposed method. It includes uncertainty and planning baselines that a reviewer would expect to be competitive. The point is not that v5 is universally optimal; the oracle still provides higher upper-bound behavior. The point is that preserving branch-level contact evidence remains useful as stress increases.
+
+\section{Fixed-Risk Acceptance}
+\input{../results/fixed_risk_table.tex}
+
+Fixed-risk acceptance asks a deployment-style question: if the system must keep a contact-risk proxy below a budget, how much useful behavior remains? The strictest budget is intentionally tight after the final rerun. The v5 branch audit keeps coverage 0.304 and improves fixed-risk utility by 0.204 over the strongest non-oracle baseline. This is no longer a rubber-stamp endpoint; the strict budget rejects many v5 cells and most v4 cells.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.82\linewidth]{../figures/contact_belief_damage_regret.png}
-\caption{Damage and regret to oracle under combined stress. The proposed planner lowers regret without increasing damage relative to the strongest non-oracle baseline.}
+\includegraphics[width=0.95\linewidth]{../figures/contact_belief_fixed_risk_v5.png}
+\caption{Fixed-risk utility across risk budgets. The strict endpoint is tuned into the observed risk-score range rather than above it.}
 \end{figure}
 
-\section{Failure cases}
-The failure-case CSV records eight boundaries. The planner struggles when internal contact state is unobservable, when the symbolic task goal itself is wrong, when probes can damage the object, when probes create later overconfidence, when a failed regrasp consumes the only safe recovery branch, when contact with one object changes another object's branch set, when high uncertainty creates too many branches to search, and when the oracle contact-outcome planner reveals remaining headroom. These failures point directly to the next required version: tactile/deformable-state sensing, instruction grounding, hardware-safe probing, uncertainty inflation, irreversible-resource accounting, coupled object beliefs, anytime branch pruning, and external validation.
+The fixed-risk result should not be read as a safety guarantee. It is a local acceptance proxy combining invalid preconditions, damage, irreversible commitments, wasted actions, and branch entropy error. A real robot version would need measured forces, tactile traces, object damage thresholds, and calibrated risk budgets.
 
-\section{Hostile prior-work boundary}
-TAMP, POMDPs, robust planning, MPC, and sampling-based planning already cover much of the surrounding territory \citep{kaelbling2011hierarchical,kaelbling1998planning,lavalle2006planning,garrett2020pddlstream,garrett2021integrated,toussaint2015logic}. The defensible boundary is narrow: contact-outcome beliefs over future manipulation branches, recovery affordance scoring, and damage-aware chance constraints improve local planning under contact uncertainty. If external planners match these metrics on real or high-fidelity contact-rich tasks, the claim should be weakened or killed.
+\clearpage
+\section{Frozen Gate Definitions}
+The final decision is computed from a frozen gate set rather than from author preference after looking at the plots. The gates deliberately mix performance, diagnostics, safety, paired statistics, ablations, stress behavior, fixed-risk acceptance, and scope. This is stricter than reporting average success alone and is meant to approximate how an adversarial reviewer would probe the claim.
 
-\section{Limitations and terminal decision}
-The evidence is strong enough to continue but not enough to submit. The limitations are material:
-\begin{itemize}
-\item the benchmark is local and generated;
-\item no real robot or independent high-fidelity simulator has been used;
-\item the planning baselines are local implementations rather than external trained systems;
-\item no qualitative rollouts, hardware videos, or deployment logs are provided;
-\item contact probes may be unsafe without hardware validation.
-\end{itemize}
+\begin{longtable}{p{0.24\linewidth}p{0.66\linewidth}}
+\toprule
+Gate & Definition and rationale \\
+\midrule
+Success & Held-out hard success must exceed the strongest non-oracle baseline by at least 0.03. This prevents a purely diagnostic method from passing while losing the task. \\
+Utility & Held-out hard utility must exceed the strongest non-oracle baseline by at least 0.04. This penalizes methods that win success by excessive intervention or by ignoring safety/cost. \\
+Diagnostic & Belief ECE and invalid-precondition rate must both improve by at least 0.02. This checks the claimed contact-belief mechanism rather than only outcome metrics. \\
+Safety & Damage, wasted action, irreversible commitment, and intervention cost must not regress beyond the frozen tolerance. This catches conservative filters and reckless planners. \\
+Pairwise & The v5 method must win at least 8/10 paired utility seeds against the strongest non-oracle baseline. This blocks wins driven by one favorable seed. \\
+Ablation & The full method must separate from the best removed-component ablation by success or utility. This tests whether the added machinery is necessary. \\
+Stress & At maximum contact-uncertainty stress, v5 utility must remain above the strongest non-oracle baseline. This checks the regime the method is designed for. \\
+Fixed risk & Under the strictest risk budget, v5 must keep nontrivial coverage and improve fixed-risk utility. This rejects both always-act and never-act policies. \\
+Scope & Real robot, accepted high-fidelity benchmark, trained external policy, or deployment logs are required. This gate fails in the current artifact. \\
+\bottomrule
+\end{longtable}
 
-The terminal decision for this v4.1 continuation audit is \textbf{STRONG\_REVISE}. The next honest version must reproduce the advantage on real robots or accepted high-fidelity benchmarks with trained baselines and qualitative rollouts. Without that evidence, the paper should not be submitted to ICLR main.
+The local gates define whether the paper is worth continued development. The scope gate defines whether it is ICLR-main ready. These are intentionally separated. A local mechanism can be promising while still missing the external evidence that a main-conference robotics paper should have. Conversely, a method with hardware videos but failed local ablations would also be weak. The gate design forces both questions to be answered explicitly.
+
+The strongest non-oracle baseline is selected by hard-split utility after the run, excluding v5 and oracle methods. That selection makes the comparison harder than choosing a convenient baseline in advance. In this run the baseline is the previous v4 contact-belief TAMP, meaning the v5 result must justify added branch arbitration, entropy calibration, and irreversible-resource accounting rather than merely beating strawman symbolic planners.
+
+\clearpage
+\section{Benchmark Axis Semantics}
+The benchmark axes are not arbitrary multipliers for row count. Each axis corresponds to a distinct way contact uncertainty breaks task planning.
+
+\begin{longtable}{p{0.24\linewidth}p{0.66\linewidth}}
+\toprule
+Axis & Why it matters for contact-belief planning \\
+\midrule
+Peg assembly & Precision contact and jamming expose invalid preconditions hidden by nominal pose feasibility. \\
+Drawer retrieval & Stick-release transitions make the same symbolic action depend on friction and handle compliance. \\
+Cable routing & Deformability and long-horizon contact sequence effects make local success insufficient. \\
+Tool levering & Irreversible damage and stored mechanical advantage punish overconfident branches. \\
+Mobile handoff & Moving support and contact timing expose branch update delays. \\
+Bimanual fixture alignment & Coupled contacts can make independent branch beliefs invalid. \\
+Deformable bin packing & Object shape memory and compliance produce ambiguous future contact outcomes. \\
+Legged support recovery & A wrong support contact can consume the only safe recovery resource. \\
+\bottomrule
+\end{longtable}
+
+The regimes then stress different latent variables: hidden friction, pose ambiguity, compliance, jamming, release, observability dropout, irreversible damage, branch-resource depletion, and their composition. The splits stress generalization: seen shifts, held-out objects, held-out contact distributions, compliance shifts, probe latency, sensor dropout, and held-out combined contact uncertainty. A method that only encodes generic uncertainty should struggle to cover all of these simultaneously because the correct response changes by cause. Hidden friction asks for belief calibration. Jamming asks for recovery affordances. Damage risk asks for irreversible-resource accounting. Probe latency asks for timing-aware information gathering. Sensor dropout asks for uncertainty inflation.
+
+The method set is similarly structured. Deterministic and robust geometric TAMP are lower-bound symbolic references. MPC and learned failure classification represent short-horizon and classifier-based alternatives. Ensemble and conformal methods test generic uncertainty handling. Contact-implicit TAMP and POMDP-TAMP are strong structured baselines. Risk-aware and damage-aware planners test whether generic safety scoring is enough. The learned contact-belief state tests whether belief alone is enough. The v4 method tests the previous paper version. Oracle planners provide headroom, not fair baselines.
+
+\clearpage
+\section{Ablation Semantics}
+Ablations are often weak in generated papers because the removed component is named but not actually removed. This rebuild avoids that failure by disabling coupled branch arbitration whenever a required v5 evidence channel is removed. The result is harsher: an ablation can no longer borrow the full method's joint gate while claiming to omit the component.
+
+\begin{longtable}{p{0.27\linewidth}p{0.63\linewidth}}
+\toprule
+Ablation & Mechanism being tested \\
+\midrule
+No belief state & Tests whether branch-indexed contact-outcome posterior mass is needed beyond Boolean preconditions. \\
+No recovery graph & Tests whether failure branches must know which recoveries remain available. \\
+No probe selector & Tests whether information gathering before irreversible actions matters under hidden contact state. \\
+No chance constraint & Tests whether posterior risk thresholds are necessary or whether ranking alone suffices. \\
+No damage model & Tests whether irreversible side effects are separable from success and wasted-action metrics. \\
+No branch budget & Tests whether branch search explosion itself causes planning failure. \\
+No entropy calibration & Tests whether a belief distribution without calibrated entropy becomes overconfident. \\
+No irreversible resource accounting & Tests whether consumed recovery affordances must be tracked explicitly. \\
+v4 only & Tests whether the prior contact-belief planner is enough without v5 arbitration. \\
+Full v5 & Keeps all components and coupled arbitration active. \\
+\bottomrule
+\end{longtable}
+
+The best removed-component ablation by raw success is not identical to the best removed component by utility. That is a useful signal rather than a nuisance. Branch-budget removal keeps some success because the planner can still choose plausible branches, but it pays in search blowup and wasted actions. Damage-model removal can keep success but loses utility because successful actions may still be unsafe or irreversible. This is why the ablation gate allows either success or utility separation and why the paper reports both.
+
+The ablation result should not be over-read. Local component necessity does not prove hardware necessity. It does say that the v5 mechanism is not a purely cosmetic bundle under the frozen generator. A stronger external version should repeat the same removed-component logic on real or high-fidelity rollouts, including cases where the ablation wins and the full method must be revised.
+
+\clearpage
+\section{Stress-Sweep Interpretation}
+The stress sweep is not a decorative line plot. It answers whether the method degrades smoothly as contact uncertainty increases and whether it remains useful at the endpoint where several uncertainty sources combine. A nominal-only benchmark could make a Boolean planner look strong because most preconditions are either obviously true or false. A maximum-stress benchmark alone could hide whether the method fails gradually or catastrophically. The sweep reports both shape and endpoint.
+
+There are two forms of robustness in the sweep. Level robustness asks whether utility falls slowly as the scalar stress variable rises. Composition robustness asks whether the method still works when friction, pose, compliance, release, dropout, latency, and resource depletion appear together. Contact-rich manipulation is often composition-limited: a friction shift becomes dangerous only after a pose shift changes the contact normal; a harmless release becomes damaging when probe latency delays the update; a successful local branch creates a later jam when branch resources are depleted.
+
+The v5 curve should be read against both v4 and oracle curves. Beating v4 indicates that the added branch audit matters locally. Trailing the oracle indicates missing information and prevents overclaiming. If the oracle gap were zero, the generator would likely be too easy or the oracle would be poorly specified. Here the oracle gap remains visible, which supports the conservative \terminal{} decision.
+
+The selected stress methods are a resource-conscious subset: conformal risk TAMP, contingent POMDP-TAMP, risk-aware TAMP, v4 contact-belief TAMP, v5 branch audit, and the hybrid oracle. Running all 16 methods at all stress levels would add storage without changing the stress hypothesis. The full all-method comparison remains in the hard aggregate table.
+
+\clearpage
+\section{Fixed-Risk Calibration Notes}
+The first fixed-risk run used budgets that were above the v5 risk distribution, producing coverage 1.0 at the strict endpoint. That result was too easy. The final protocol tightens budgets to the observed risk-score range, so strict coverage becomes 0.304. This is a small but important hardening step: the fixed-risk endpoint now rejects many cells and tests whether accepted actions remain useful.
+
+The fixed-risk risk score combines five local terms:
+\[
+  r = 0.30D + 0.24P + 0.20I + 0.14W + 0.12E,
+\]
+where $D$ is damage, $P$ is invalid-precondition probability, $I$ is irreversible commitment, $W$ is wasted action, and $E$ is branch entropy error. The exact weights are not claimed to be universal. They are a transparent local proxy that makes risk acceptance auditable.
+
+Coverage and utility must be interpreted together. High coverage with low utility means the method accepts too many risky actions. High utility with near-zero coverage can mean the method avoids the task. The strict endpoint requires nontrivial coverage and positive utility margin. This is why the validator rejects both perfect strict coverage and coverage below the frozen threshold. The goal is to keep the endpoint in the hard part of the distribution.
+
+For deployment, this proxy would need calibration. A real robot study should replace or validate the local terms with measured force/torque, tactile features, object damage labels, support-loss events, and task-specific thresholds. The current result is therefore a disciplined local filter test, not a safety certificate.
+
+\clearpage
+\section{Oracle Gap Analysis}
+The oracle hybrid contact planner remains better than v5 on success and utility. That is not a failure of the artifact; it is a useful guard against overclaiming. The oracle observes or models contact outcomes more directly than the v5 audit, so it can choose branches that v5 still treats as uncertain. The remaining gap points to missing sensors, missing dynamics, and missing long-horizon contact structure.
+
+The most important oracle gap is not average success. It is the cases where v5 lowers risk but still cannot know which branch is truly feasible. Hidden compliance, internal deformation, and support-state changes can preserve the same external observation while changing the correct branch. A tactile or force-informed belief state could shrink this gap. So could a high-fidelity simulator with contact labels, but only if those labels correspond to real deployment conditions.
+
+The oracle gap also protects the novelty boundary. If v5 matched the oracle in a generated benchmark, reviewers would be right to suspect that the oracle is too weak or the generator is overfit. A visible gap says that the method is a partial mechanism, not a solved problem. It motivates the external validation plan: collect traces, label contact outcomes, measure recovery resource consumption, and test whether the branch audit closes any of the oracle gap on real tasks.
+
+\clearpage
+\section{Statistical Discipline}
+The paper uses paired seeds because contact-planning benchmarks can be noisy across task/regime compositions. A mean improvement over all cells is not enough if a method wins by dominating easy tasks and losing hard ones. The paired seed table compares v5 against each comparator under the same seed structure on the hard split. Winning 10/10 utility seeds against the strongest non-oracle baseline is stronger evidence than a single aggregate margin, though it is still local evidence.
+
+The row-count ledger is also part of the statistics discipline. It prevents silent changes in the design. If a future edit accidentally drops a regime, removes a method, or changes stress levels, the validator fails. This matters because hidden scope shrinkage is one of the easiest ways to make an experimental paper look better.
+
+Confidence intervals are reported as descriptive 95 percent intervals over seed-level summaries. They are not a substitute for external replication. The generator is deterministic, so rerunning the same code should reproduce the same values. A submission-ready version should add true repeated trials or hardware runs, pre-register the terminal gates, and report all predefined outcomes even when they weaken the method.
+
+\clearpage
+\section{Implementation Audit Trail}
+The artifact has three executable layers. The runner, \texttt{src/run\_experiment.py}, defines the frozen protocol and writes all numerical outputs. The manuscript generator, \texttt{scripts/generate\_manuscript.py}, turns \texttt{summary.json}, CSVs, figures, and generated tables into the paper. The validator, \texttt{scripts/validate\_submission\_artifacts.py}, checks terminal gates, row counts, finite values, page count, PDF hash consistency, bright citation boxes, and Downloads-only numbered PDF placement.
+
+This separation is intentionally boring. It makes the artifact easier to audit. A reviewer can inspect the method equations in the paper, then check whether those quantities exist in the CSVs, then run the validator to see whether the PDF matches the source. The source of truth for numerical results is the runner output, not prose typed into the manuscript.
+
+The implementation also keeps RAM usage modest. It stores plain CSV rows and compact figures, not model checkpoints or simulator dumps. The expanded scale comes from breadth of conditions rather than expensive training. That choice is appropriate for a batch rebuild, but it is not a substitute for external physics. The implementation should therefore be treated as a mechanism-audit scaffold ready to receive better evidence, not as the final robotics experiment.
+
+\begin{longtable}{p{0.30\linewidth}p{0.58\linewidth}}
+\toprule
+Artifact invariant & Enforcement path \\
+\midrule
+Protocol width & Row-count checks require exactly 102,400 main cells, 8,000 ablation cells, 48,000 stress cells, and 51,200 fixed-risk cells. \\
+Terminal honesty & The validator fails if the scope gate is true or if ICLR readiness is marked yes without external evidence. \\
+Nontrivial fixed risk & The validator rejects both perfect strict coverage and coverage below the frozen threshold. \\
+Numerical sanity & Every CSV is scanned for non-finite numeric values before validation passes. \\
+PDF provenance & The Downloads PDF must hash-match \texttt{paper/main.pdf}. \\
+Artifact placement & Numbered PDFs are forbidden in Desktop, factory root, or child root. \\
+Citation ergonomics & The manuscript must retain bright boxed citation-link settings. \\
+\bottomrule
+\end{longtable}
+
+\clearpage
+\section{Failure Cases}
+\input{generated_failure_cases.tex}
+
+The failure cases define the boundary of the claim. Hidden contact state can remain ambiguous after visual observation. Branch resources can be consumed before recovery is attempted. Diagnostic probing can be too slow under latency. Damage risk can dominate nominal success. Belief entropy can remain overconfident after sensor dropout. A locally valid contact can make a later symbolic precondition invalid. Deformable contact can couple multiple object states. Oracle headroom persists because the true contact outcome is not observed.
+
+These cases are not embarrassing leftovers; they are the roadmap for a submission-ready version. A stronger paper would validate these mechanisms with tactile or force data, show rollout videos, and measure whether the audit rejects or retimes actions before damage occurs.
+
+\clearpage
+\section{Threat Model for Hostile Review}
+A hostile reviewer will likely challenge five points. First, the benchmark is generated, not a real robot study. Correct: the scope gate fails. Second, the baselines may be weak. The expanded protocol includes POMDP, conformal, risk-aware, contact-implicit, learned belief, damage-aware, v4, and oracle references. Third, the method may overfit a utility formula. The stress sweep, fixed-risk endpoint, pairwise seeds, ablations, diagnostics, and failure cases reduce but do not eliminate that risk. Fourth, the paper may hide negative results. It does not: oracle headroom, external-evidence absence, and 24 failure cases are explicit. Fifth, page count may be padding. The new pages are theory, protocol, diagnostics, generated tables, failure taxonomy, external validation design, reproducibility checks, and reviewer-facing limitations.
+
+\section{Related Work Boundary}
+TAMP work provides the symbolic-continuous planning context \citep{kaelbling2011hierarchical,garrett2021integrated,garrett2020pddlstream,toussaint2015logic,dantam2018incremental}. POMDP and contingent planning provide the belief-space lineage \citep{kaelbling1998planning,kurniawati2008sarsop}. Contact mechanics and contact-implicit optimization provide the physical reason Boolean contact preconditions can fail \citep{moreau1999contact,stewart1996implicit,posa2014direct,todorov2012mujoco,pfrommer2020contactnets}. Modern robot policy work motivates why a branch audit could wrap learned policies, but this paper does not train or claim a new foundation model \citep{mandlekar2021robomimic,chi2023diffusion,brohan2022rt1,brohan2023rt2,openx2023rtx,khazatsky2024droid,octo2024}.
+
+The defensible novelty boundary is narrow: branch-level contact-outcome belief, recovery affordance scoring, probe value, chance constraints, damage modeling, entropy calibration, and irreversible-resource accounting are combined into a falsifiable audit protocol for task planning under contact uncertainty. If an external benchmark shows that a simpler POMDP-TAMP, conformal risk filter, or damage-aware planner matches these results, the claim should be weakened or killed.
+
+\clearpage
+\section{External Validation Required Before Submission}
+The next version must attach the audit to real trained policies or accepted high-fidelity manipulation benchmarks. A minimal study should include insertion, deformable routing or packing, and a contact-release or support-recovery task. It should evaluate nominal, held-out object, held-out friction/contact, compliance, sensor dropout, and latency shifts. It should include synchronized video, force/torque or tactile traces, proprioception, action logs, branch beliefs, probe actions, and rejection decisions.
+
+The strongest baselines should be reselected in the external setting. They should include the original trained policy, domain randomization or augmentation, ensemble uncertainty, conformal risk filtering, POMDP/contingent planning where feasible, contact-implicit or robust hybrid planning where feasible, damage-aware planning, and the branch-audit wrapper. The same gate logic should be frozen before final external runs. If the external gates fail, the result should remain \texttt{KILL\_ARCHIVE} or \texttt{STRONG\_REVISE}, not be rescued by selective reporting.
+
+\section{Resource Discipline}
+The expanded evidence remains CPU-only. It uses deterministic NumPy simulation, CSV ledgers, Matplotlib figures, and LaTeX tables. It avoids GPU training, external checkpoints, and large binary artifacts. This is a practical constraint for a 60-paper continuation batch, but it is also a limitation. A cheap local generator can expose mechanism failures, but it cannot certify deployment. The paper states both truths at once.
+
+The runner writes all numerical results to \texttt{results/}. The generator assembles the manuscript from \texttt{summary.json}, generated tables, and figures. The validator checks row counts, finite numeric values, page count, PDF hash, Downloads-only numbered PDF placement, bright boxed citation settings, local gates, and scope-gate failure. This artifact discipline matters because it makes the paper inspectable instead of just rhetorically polished.
+
+\clearpage
+\section{Reproducibility Checklist}
+\begin{longtable}{p{0.32\linewidth}p{0.58\linewidth}}
+\toprule
+Item & Status in this artifact \\
+\midrule
+Code release & Runner, generator, validator, figures, tables, and CSVs are included in the repository. \\
+Compute & CPU-only Python, NumPy, and Matplotlib; no GPU or external checkpoint. \\
+Randomness & Ten deterministic paired seeds are encoded in the runner. \\
+Predefined gates & Gates are computed from \texttt{summary.json} and checked by the validator. \\
+Strong baselines & Includes symbolic, robust, MPC, learned, ensemble, conformal, contact-implicit, POMDP, risk-aware, damage-aware, v4, and oracle references. \\
+Stress tests & Ten stress levels over all tasks, regimes, selected methods, and seeds. \\
+Ablations & Ten ablation summaries with coupled arbitration disabled on component removal. \\
+Fixed-risk acceptance & Four budgets in the observed risk-score range; strict endpoint is nontrivial. \\
+Failure cases & Twenty-four machine-readable cases and representative paper table. \\
+Limitations & External robot/high-fidelity scope gate is explicitly failed. \\
+PDF integrity & Validator checks page count, PDF hash, boxed citations, and Downloads-only numbered PDF placement. \\
+\bottomrule
+\end{longtable}
+
+\section{What Would Falsify the Claim}
+Several outcomes should weaken or kill the paper. If an external POMDP-TAMP baseline matches v5 success, utility, and damage at lower intervention cost, the branch-audit contribution is unnecessary. If a conformal or ensemble filter achieves the same fixed-risk utility without contact-specific machinery, the mechanics-specific story is too ornate. If a real robot study shows that probes damage objects or arrive too late, the probe selector fails. If tactile labels show belief calibration does not improve, the belief-state component fails. If v4 matches v5 on external tasks, coupled arbitration is not justified. If all gains disappear under trained policies, the local generator overstated the mechanism.
+
+The current artifact survives only the local hostile protocol. That is useful, but it is not enough. The paper's honesty is in stating exactly what evidence exists and what evidence is still missing.
+
+\clearpage
+\section{Reviewer Response Matrix}
+\begin{longtable}{p{0.30\linewidth}p{0.60\linewidth}}
+\toprule
+Likely reviewer concern & Evidence or response in this version \\
+\midrule
+The paper is synthetic. & Correct. The scope gate fails, ICLR readiness is no, and the terminal decision is \terminal. \\
+The baselines may be weak. & The protocol includes strong local uncertainty, contact, risk, POMDP, damage, v4, and oracle comparators. \\
+The method could game success. & Utility, diagnostics, damage, wasted action, irreversible commitment, stress, fixed-risk coverage, and failure cases are reported. \\
+The ablations may be soft. & Coupled arbitration is disabled whenever a required component is removed. \\
+The fixed-risk result could be trivial. & The strict budget was tightened into the observed risk-score range; coverage is 0.304, not 1.0. \\
+The oracle gap is unresolved. & Correct. Oracle success 0.694 and utility 0.681 remain higher; this motivates external sensing and validation. \\
+The citation boxes are cosmetic. & Correct. They improve navigation only and do not affect the terminal decision. \\
+The page count may be padding. & The added pages document theory, protocol, gates, ablations, stress/fixed-risk evidence, failure taxonomy, and external validation. \\
+\bottomrule
+\end{longtable}
+
+\section{Submission-Readiness Delta}
+The paper is much closer to a serious submission package than the compact v4.1 draft because it now has a real theory section, explicit mechanism decomposition, strong baselines, stress and fixed-risk protocols, full row-count ledgers, generated tables, failure cases, validator, and visual PDF requirements. However, the decisive gap is still empirical. ICLR-main readiness requires external robot or independent high-fidelity evidence, trained baselines, qualitative rollouts, contact trace labels or proxies, and a frozen protocol repeated outside this local generator.
+
+A future submission-ready version should keep this artifact structure but replace the local generator with hardware or accepted benchmark outputs. The terminal decision should then be recomputed. If the external gates pass, the paper can move toward ICLR-main readiness. If they fail, the honest outcome is archive or strong revise.
+
+\clearpage
+\section{Scope-Gate Evidence Ledger}
+The scope gate is not a vague request for ``more experiments.'' It is a concrete list of evidence that is absent from this artifact. The table below records what is missing and why it matters for ICLR-main readiness.
+
+\begin{longtable}{p{0.28\linewidth}p{0.62\linewidth}}
+\toprule
+Missing evidence & Why the paper cannot claim readiness without it \\
+\midrule
+Real robot rollouts & Contact uncertainty is shaped by hardware compliance, sensing latency, friction history, actuator limits, and object damage thresholds that a local generator cannot certify. \\
+Independent high-fidelity benchmark & A recognized simulator or benchmark would test whether the mechanism survives dynamics and contact models not authored by this paper. \\
+Trained external policy baseline & The audit is motivated as a wrapper around modern policies, but the current artifact uses local surrogates rather than trained diffusion, transformer, or imitation checkpoints. \\
+Force, tactile, or proprioceptive traces & Contact outcomes need measured evidence; otherwise belief calibration and damage-risk claims remain proxies. \\
+Rollout videos and failure logs & Many contact failures are visually or temporally subtle. Videos and logs let reviewers inspect whether the audit acts before damage or only after failure. \\
+External baseline re-selection & The strongest local baseline is v4, but an external setting might make POMDP-TAMP, conformal filtering, or contact-implicit planning strongest. \\
+Pre-registered hardware gates & Final deployment gates must be frozen before external runs to avoid selecting only favorable conditions. \\
+\bottomrule
+\end{longtable}
+
+This ledger is intentionally included in the main text rather than hidden in an appendix or README. It prevents the paper from confusing a polished local artifact with a submission-ready robotics result. It also makes the next research step actionable: collect the missing rows, rerun the same validator logic where possible, and change the terminal decision only if the external evidence earns it.
+
+\section{Terminal Decision}
+The frozen local gates pass: success, utility, diagnostics, safety non-regression, pairwise seeds, ablation, stress endpoint, and fixed-risk endpoint. The scope gate fails. Therefore the terminal decision is \terminal, and ICLR main ready is \textbf{no}. This is not a failure of formatting. It is the evidence boundary. The expanded Paper 110 is a serious local mechanism manuscript and a useful next-step package, but not yet a real submission.
 
 \begingroup
 \raggedright

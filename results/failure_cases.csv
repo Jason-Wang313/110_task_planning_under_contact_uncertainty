@@ -1,9 +1,25 @@
-case,stress_split,observed_failure,success_rate,lesson
-unobservable_internal_contact,combined_stress,belief stays calibrated but hidden internal deformation changes outcome,0.392,needs tactile or deformable-state sensing
-semantic_task_mismatch,unseen_object,correct contact branch executes the wrong symbolic goal,0.446,contact belief does not solve language grounding
-probe_causes_damage,unseen_contact,diagnostic contact probe itself scratches the object,0.418,probe safety must be validated on hardware
-oracle_gap,combined_stress,oracle contact-outcome planner remains better,0.56,branch belief is useful but not saturated
-belief_overconfidence_after_probe,seen_shift,a successful probe makes the planner overconfident about later contacts,0.454,belief updates need temporal decay and uncertainty inflation
-irreversible_regrasp_branch,combined_stress,a failed regrasp consumes the only safe recovery affordance,0.407,branch scoring needs irreversible-resource accounting
-multi_object_contact_coupling,unseen_object,contact with one object changes another object's feasible branch set,0.429,needs coupled object-state beliefs rather than independent branch beliefs
-planner_timeout_under_branching,combined_stress,high contact uncertainty creates too many recoverable branches to search,0.401,requires anytime pruning or learned branch proposal policies
+case_id,task,regime,split,primary_success,strongest_baseline_success,oracle_success,success_gap_to_oracle,precondition_violation,damage_rate,irreversible_commitment,lesson
+1,bimanual_fixture_alignment,nominal,heldout_combined_contact_uncertainty,0.466667,0.483333,0.85,0.383333,0.000398,0.020241,0.020416,hidden contact state needs tactile or force-informed belief updates
+2,deformable_bin_packing,jamming_ambiguity,heldout_combined_contact_uncertainty,0.5,0.5,0.75,0.25,0.0243,0.029367,0.037691,branch resources are consumed before recovery can be attempted
+3,bimanual_fixture_alignment,pose_ambiguity,heldout_combined_contact_uncertainty,0.516667,0.516667,0.766667,0.25,0.013665,0.024459,0.029605,diagnostic probing is too slow under high latency
+4,cable_routing,compliance_ambiguity,heldout_combined_contact_uncertainty,0.566667,0.466667,0.783333,0.216667,0.020325,0.025588,0.03353,damage risk dominates success under irreversible contacts
+5,mobile_handoff,nominal,heldout_combined_contact_uncertainty,0.6,0.633333,0.8,0.2,0.0,0.02087,0.021572,belief entropy remains overconfident after sensor dropout
+6,bimanual_fixture_alignment,compliance_ambiguity,heldout_combined_contact_uncertainty,0.566667,0.55,0.766667,0.2,0.017816,0.023583,0.03554,local contact success causes a later symbolic precondition failure
+7,bimanual_fixture_alignment,branch_resource_depletion,heldout_combined_contact_uncertainty,0.55,0.55,0.733333,0.183333,0.023203,0.028366,0.043689,deformable contact creates coupled object-state uncertainty
+8,deformable_bin_packing,hidden_friction,heldout_combined_contact_uncertainty,0.516667,0.4,0.7,0.183333,0.01971,0.024858,0.02566,oracle headroom remains because true contact outcomes are unobserved
+9,deformable_bin_packing,branch_resource_depletion,heldout_combined_contact_uncertainty,0.516667,0.516667,0.7,0.183333,0.023558,0.029259,0.039999,hidden contact state needs tactile or force-informed belief updates
+10,drawer_retrieval,irreversible_damage_risk,heldout_combined_contact_uncertainty,0.583333,0.516667,0.75,0.166667,0.020294,0.025268,0.033465,branch resources are consumed before recovery can be attempted
+11,cable_routing,jamming_ambiguity,heldout_combined_contact_uncertainty,0.55,0.583333,0.716667,0.166667,0.020364,0.024962,0.038797,diagnostic probing is too slow under high latency
+12,tool_levering,irreversible_damage_risk,heldout_combined_contact_uncertainty,0.55,0.533333,0.716667,0.166667,0.021183,0.027481,0.042179,damage risk dominates success under irreversible contacts
+13,peg_assembly,jamming_ambiguity,heldout_combined_contact_uncertainty,0.633333,0.55,0.783333,0.15,0.024459,0.022523,0.035995,belief entropy remains overconfident after sensor dropout
+14,peg_assembly,release_uncertainty,heldout_combined_contact_uncertainty,0.516667,0.566667,0.666667,0.15,0.013857,0.026027,0.031541,local contact success causes a later symbolic precondition failure
+15,drawer_retrieval,compliance_ambiguity,heldout_combined_contact_uncertainty,0.65,0.516667,0.8,0.15,0.016258,0.021533,0.030387,deformable contact creates coupled object-state uncertainty
+16,cable_routing,combined_contact_uncertainty,heldout_combined_contact_uncertainty,0.466667,0.533333,0.6,0.133333,0.034585,0.030861,0.043201,oracle headroom remains because true contact outcomes are unobserved
+17,tool_levering,jamming_ambiguity,heldout_combined_contact_uncertainty,0.65,0.616667,0.783333,0.133333,0.021746,0.024821,0.039278,hidden contact state needs tactile or force-informed belief updates
+18,drawer_retrieval,nominal,heldout_combined_contact_uncertainty,0.65,0.633333,0.783333,0.133333,0.000308,0.01747,0.019854,branch resources are consumed before recovery can be attempted
+19,deformable_bin_packing,release_uncertainty,heldout_combined_contact_uncertainty,0.533333,0.566667,0.666667,0.133333,0.013774,0.027632,0.032245,diagnostic probing is too slow under high latency
+20,legged_support_recovery,jamming_ambiguity,heldout_combined_contact_uncertainty,0.666667,0.55,0.8,0.133333,0.019897,0.026435,0.041129,damage risk dominates success under irreversible contacts
+21,legged_support_recovery,pose_ambiguity,heldout_combined_contact_uncertainty,0.6,0.65,0.716667,0.116667,0.016931,0.024389,0.035104,belief entropy remains overconfident after sensor dropout
+22,cable_routing,nominal,heldout_combined_contact_uncertainty,0.65,0.6,0.766667,0.116667,0.000114,0.020068,0.020212,local contact success causes a later symbolic precondition failure
+23,tool_levering,hidden_friction,heldout_combined_contact_uncertainty,0.533333,0.533333,0.65,0.116667,0.019309,0.022481,0.026617,deformable contact creates coupled object-state uncertainty
+24,bimanual_fixture_alignment,jamming_ambiguity,heldout_combined_contact_uncertainty,0.583333,0.516667,0.683333,0.1,0.023126,0.025076,0.038834,oracle headroom remains because true contact outcomes are unobserved

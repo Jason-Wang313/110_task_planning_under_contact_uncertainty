@@ -1,0 +1,29 @@
+\begin{table}[t]
+\centering
+\caption{Held-out combined-contact uncertainty aggregate.}
+\scriptsize
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrrr}
+\toprule
+Method & Succ. & Util. & Precond & ECE & Recov. & Damage \\
+\midrule
+OracleHybrid & 0.694 & 0.681 & 0.014 & 0.038 & 0.596 & 0.032 \\
+OracleOutcome & 0.665 & 0.637 & 0.022 & 0.044 & 0.575 & 0.034 \\
+v5BranchAudit & 0.630 & 0.612 & 0.019 & 0.026 & 0.576 & 0.025 \\
+v4BeliefTAMP & 0.560 & 0.463 & 0.063 & 0.068 & 0.517 & 0.045 \\
+LearnedBelief & 0.520 & 0.358 & 0.101 & 0.085 & 0.432 & 0.060 \\
+POMDP-TAMP & 0.504 & 0.321 & 0.113 & 0.102 & 0.427 & 0.059 \\
+RiskTAMP & 0.495 & 0.303 & 0.116 & 0.107 & 0.395 & 0.049 \\
+DamageAware & 0.478 & 0.272 & 0.129 & 0.115 & 0.373 & 0.045 \\
+ImplicitTAMP & 0.476 & 0.251 & 0.135 & 0.124 & 0.367 & 0.065 \\
+Ensemble & 0.465 & 0.245 & 0.136 & 0.111 & 0.364 & 0.069 \\
+Conformal & 0.432 & 0.194 & 0.143 & 0.122 & 0.330 & 0.061 \\
+FailCls & 0.447 & 0.190 & 0.165 & 0.138 & 0.325 & 0.075 \\
+SmoothWM & 0.449 & 0.175 & 0.180 & 0.148 & 0.294 & 0.078 \\
+MPC & 0.442 & 0.157 & 0.181 & 0.154 & 0.294 & 0.079 \\
+RobustGeom & 0.388 & 0.068 & 0.208 & 0.171 & 0.233 & 0.081 \\
+DetTAMP & 0.329 & -0.018 & 0.247 & 0.192 & 0.173 & 0.104 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
